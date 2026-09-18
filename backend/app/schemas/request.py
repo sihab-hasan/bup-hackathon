@@ -32,7 +32,33 @@ class BatteryConfig(StrictModel):
         return self
 
 
+OPENAPI_REQUEST_EXAMPLE = {
+    "scenario_id": "swagger-sample",
+    "operator_notes": ["No operational changes today."],
+    "hours": [
+        {
+            "hour": hour,
+            "demand_kwh": 1,
+            "solar_kwh": 0,
+            "tariff_bdt_per_kwh": 5,
+        }
+        for hour in range(24)
+    ],
+    "battery": {
+        "capacity_kwh": 10,
+        "initial_energy_kwh": 5,
+        "minimum_energy_kwh": 1,
+        "max_charge_kwh_per_hour": 2,
+        "max_discharge_kwh_per_hour": 2,
+    },
+}
+
+
 class OptimizationRequest(StrictModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={"example": OPENAPI_REQUEST_EXAMPLE},
+    )
     scenario_id: str = Field(min_length=1, max_length=200)
     operator_notes: list[str] = Field(min_length=1, max_length=3)
     hours: list[HourInput] = Field(min_length=24, max_length=24)
