@@ -14,13 +14,14 @@ optimizes grid, solar, and battery usage.
 │   ├── tests/                       # Unit, integration, and evaluation tests
 │   └── requirements.txt             # Runtime, development, and test dependencies
 ├── BUP_CSE_FEST_2026_Participant_Docs/
+│   ├── BUP_CSE_FEST_2026_Participant_Guide_&_Evaluation_Rubric_GridWise_LLM.pdf
+│   ├── BUP_CSE_FEST_2026_Preliminary_Problem_Statement_GridWise_LLM.pdf
 │   └── BUP_CSE_FEST_2026_Preli_Public_Sample_Cases.json
-├── .env.example
 └── docker-compose.yml
 ```
 
-The current implementation is backend-only. There is no `frontend/` directory
-or Supabase integration in this repository.
+The browser demo is served by the backend from `backend/app/web/`. There is no
+separate `frontend/` directory or Supabase integration in this repository.
 
 ## Requirements
 
@@ -54,8 +55,9 @@ python -m pip install -r requirements.txt
 
 ## Configuration
 
-Copy `.env.example` to `.env` in the repository root. The backend also loads
-`backend/.env`; values there override values from the root file.
+Create a `.env` file in the repository root, or configure the same variables in
+`backend/.env`. The backend loads both locations; values in `backend/.env`
+override values from the root file.
 
 ```env
 APP_NAME=GridWise API
