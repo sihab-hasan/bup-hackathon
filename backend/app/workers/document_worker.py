@@ -1,1 +1,0 @@
-# Background document worker.
