@@ -5,7 +5,7 @@ from typing import Any
 
 from google import genai
 from google.genai import types
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from app.ai.llm.client import AsyncContentGenerator
 from app.core.exceptions import LLMOutputError, LLMUnavailableError
@@ -40,8 +40,6 @@ Rules:
 
 
 class GeminiDirective(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
     note_index: int = Field(ge=0)
     applies: bool
     directive_type: DirectiveType
@@ -53,8 +51,6 @@ class GeminiDirective(BaseModel):
 
 
 class GeminiDirectiveBatch(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
     directives: list[GeminiDirective] = Field(min_length=1, max_length=3)
 
 
@@ -84,7 +80,7 @@ class GeminiNoteInterpreter:
                     temperature=0,
                     max_output_tokens=1200,
                     response_mime_type="application/json",
-                    response_schema=GeminiDirectiveBatch,
+                    response_json_schema=GeminiDirectiveBatch.model_json_schema(),
                 ),
             )
         except Exception as exc:
