@@ -12,12 +12,15 @@ from app.schemas import (
 
 
 class UnconfiguredNoteInterpreter:
+    def __init__(self, message: str = "LLM interpreter has not been configured") -> None:
+        self.message = message
+
     async def interpret_notes(
         self,
         operator_notes: list[str],
         battery: BatteryConfig,
     ) -> list[DirectiveInterpretation]:
-        raise LLMUnavailableError("LLM interpreter has not been configured")
+        raise LLMUnavailableError(self.message)
 
 
 class UnconfiguredEnergyOptimizer:
