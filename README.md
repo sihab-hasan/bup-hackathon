@@ -1,134 +1,159 @@
-# Hackathon
+# GridWise LLM API
 
-Next.js frontend + FastAPI backend with Supabase as the primary data and integration layer.
+GridWise converts a natural-language power-grid operator note into a validated
+24-hour energy schedule. The preliminary-round deliverable is a backend API; no
+frontend is required by the problem statement.
 
-## Structure
+## Pipeline
 
 ```text
-.
-├── frontend/    # Next.js application
-├── backend/     # FastAPI application
-└── docs/        # Architecture and API documentation
+POST /optimize-energy
+        |
+        v
+Gemini interpreter -> input guardrails -> deterministic optimizer -> schedule validator
+        |
+        v
+24 hourly values + machine directives + human-readable explanation
 ```
 
-The `backend/app/integrations/` abstraction is intentionally omitted because Supabase handles the persistence and integration concerns.
+Gemini extracts structured intent only. Schedule generation and validation remain
+deterministic so the same interpreted constraints produce a reproducible result.
 
-## Prerequisites
+## API
 
-* Node.js
-* pnpm
-* Python 3.13+
-* A Supabase project
+- `GET /health` - service health check
+- `POST /optimize-energy` - interpret an operator note and return an optimized schedule
+- `GET /docs` - interactive OpenAPI documentation
 
-## Run
+The request and response contract, limits, error shape, and examples are documented
+in `docs/api-contract.md`.
 
-### Frontend
+## Local Setup
 
-```bash
-cd frontend
-pnpm install
-pnpm dev
-```
+Requirements:
 
-### Backend
+- Python 3.12 or newer
+- A Gemini API key from Google AI Studio
 
-Create and activate a Python virtual environment:
-
-**Windows PowerShell:**
+Create a virtual environment and install dependencies:
 
 ```powershell
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
-
-**macOS / Linux:**
-
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-```
-
-Install the backend dependencies:
-
-```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Start the FastAPI development server:
-
-```bash
-python -m uvicorn app.main:app --reload
-```
-
-The API will be available at:
-
-```text
-http://127.0.0.1:8000
-```
-
-Interactive API documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Alternative API documentation:
-
-```text
-http://127.0.0.1:8000/redoc
-```
-
-## Environment Variables
-
-Copy `.env.example` to `.env` in the repository root and configure the required
-credentials. The backend also accepts `backend/.env`, which overrides root values.
-
-Example:
+Copy `.env.example` to `.env` in the repository root and set the key:
 
 ```env
-SUPABASE_URL=your-supabase-project-url
-SUPABASE_KEY=your-supabase-key
 GEMINI_API_KEY=your-gemini-api-key
 LLM_PROVIDER=gemini
 LLM_MODEL=gemini-2.5-flash
+LLM_TIMEOUT_SECONDS=20
+OPTIMIZER_TIMEOUT_SECONDS=20
 ```
 
-Never commit `.env` or other files containing secrets.
+Never commit `.env` or any API key. The backend reads the root `.env`; an optional
+`backend/.env` takes precedence.
 
-Gemini converts each operator note into a structured GridWise directive. If the
-API key is absent, `/optimize-energy` returns a safe 503 response.
-
-## Development
-
-When working on the backend, activate the virtual environment before running commands:
+Start the API:
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
+cd backend
+python start.py
 ```
 
-To deactivate it:
+The default URL is `http://127.0.0.1:8000`. A host can provide a different port
+through the `PORT` environment variable.
+
+Check it:
 
 ```powershell
-deactivate
+curl.exe http://127.0.0.1:8000/health
 ```
 
-The `.venv/` directory should not be committed to Git.
+## Verification
 
-## Backend Dependencies
+Run the complete automated test suite:
 
-Backend dependencies are managed through:
+```powershell
+cd backend
+python -m pytest -q
+```
+
+Run the live Gemini evaluation against all 10 organizer-provided public cases:
+
+```powershell
+cd backend
+python scripts/evaluate_public_llm.py
+```
+
+Run a health check and one full public-case request against a deployed API:
+
+```powershell
+cd backend
+python scripts/smoke_public_api.py https://your-service.example.com
+```
+
+The live evaluation consumes Gemini quota. Unit and integration tests use test
+doubles and do not require network access.
+
+## Docker
+
+Build and run from the repository root:
+
+```powershell
+docker build -t gridwise-api backend
+docker run --rm -p 8000:8000 --env-file .env gridwise-api
+```
+
+Or use Compose:
+
+```powershell
+docker compose up --build
+```
+
+The container honors `PORT` and exposes `/health` for platform health checks.
+
+## Deploy To Render
+
+The repository includes `render.yaml` for a Render Blueprint deployment.
+
+1. Push the repository to GitHub.
+2. In Render, create a new Blueprint and select this repository.
+3. Confirm the `gridwise-api` service from `render.yaml`.
+4. Add `GEMINI_API_KEY` as a secret environment variable when prompted.
+5. Deploy, then run `scripts/smoke_public_api.py` against the public URL.
+
+Render builds `backend/Dockerfile`, checks `/health`, and supplies the public HTTPS
+endpoint. The free plan can sleep after inactivity, so the first request may be slower.
+
+## Project Layout
 
 ```text
-backend/requirements.txt
+backend/
+  app/api/                 FastAPI routes and dependency wiring
+  app/services/interpreter Gemini extraction and guardrails
+  app/services/optimizer   deterministic scheduling and validation
+  scripts/                 live evaluation and deployment smoke tests
+  tests/                   unit and end-to-end integration tests
+docs/                      API and architecture documentation
+render.yaml                Render deployment blueprint
+docker-compose.yml         local container runner
 ```
 
-Install them with:
+## Dependencies And Credits
 
-```bash
-python -m pip install -r requirements.txt
-```
+- FastAPI and Uvicorn for the HTTP service
+- Google Gen AI SDK and Gemini 2.5 Flash for note interpretation
+- Pydantic for request, response, and structured LLM validation
+- pytest and HTTPX for automated verification
 
-Do not install project dependencies globally when working on the project.
+## Known Limitations
+
+- Live interpretation depends on Gemini availability, quota, and API-key validity.
+- The rule-based optimizer targets the preliminary problem contract and its public
+  cases; new grid constraints may require additional optimization rules.
+- The API intentionally does not persist operator notes or schedules.
