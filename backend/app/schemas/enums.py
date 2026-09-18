@@ -1,7 +1,7 @@
-from enum import StrEnum
+from enum import Enum
 
 
-class DirectiveType(StrEnum):
+class DirectiveType(str, Enum):
     SOLAR_REDUCTION = "solar_reduction"
     MINIMUM_BATTERY_RESERVE = "minimum_battery_reserve"
     NO_CHARGE_WINDOW = "no_charge_window"
@@ -10,7 +10,7 @@ class DirectiveType(StrEnum):
     NO_OP = "no_op"
 
 
-class BatteryAction(StrEnum):
+class BatteryAction(str, Enum):
     CHARGE = "charge"
     DISCHARGE = "discharge"
     IDLE = "idle"

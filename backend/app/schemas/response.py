@@ -1,58 +1,27 @@
-from __future__ import annotations
-
-from pydantic import BaseModel, ConfigDict, Field, model_validator
-
+from typing import List
+from pydantic import BaseModel, Field
 from app.schemas.directives import DirectiveInterpretation
 from app.schemas.enums import BatteryAction
 
 
-class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+class HourlyPlanEntry(BaseModel):
+    hour: int = Field(..., ge=0, le=23, description="Hour from 0 to 23")
+    grid_kwh: float = Field(..., ge=0.0, description="Non-negative grid energy purchased")
+    solar_used_kwh: float = Field(..., ge=0.0, description="Solar energy used in this hour")
+    battery_action: BatteryAction = Field(..., description="Action: charge, discharge, or idle")
+    battery_kwh: float = Field(..., ge=0.0, description="Magnitude of battery action, 0 when idle")
+    battery_energy_after_kwh: float = Field(
+        ..., ge=0.0, description="Battery energy state after completing this hour"
+    )
 
 
-class HourlyPlanItem(StrictModel):
-    hour: int = Field(ge=0, le=23)
-    grid_kwh: float = Field(ge=0, allow_inf_nan=False)
-    solar_used_kwh: float = Field(ge=0, allow_inf_nan=False)
-    battery_action: BatteryAction
-    battery_kwh: float = Field(ge=0, allow_inf_nan=False)
-    battery_energy_after_kwh: float = Field(ge=0, allow_inf_nan=False)
-
-
-class OptimizerResult(StrictModel):
-    hourly_plan: list[HourlyPlanItem] = Field(min_length=24, max_length=24)
-    plan_summary: str = Field(min_length=1, max_length=2000)
-
-    @model_validator(mode="after")
-    def validate_plan_hours(self) -> OptimizerResult:
-        plan_hours = [item.hour for item in self.hourly_plan]
-        if set(plan_hours) != set(range(24)):
-            raise ValueError(
-                "hourly_plan must contain each hour from 0 through 23 exactly once"
-            )
-        self.hourly_plan = sorted(self.hourly_plan, key=lambda item: item.hour)
-        self.plan_summary = self.plan_summary.strip()
-        return self
-
-
-class OptimizationResponse(StrictModel):
-    scenario_id: str
-    directive_interpretation: list[DirectiveInterpretation]
-    hourly_plan: list[HourlyPlanItem]
-    total_grid_kwh: float = Field(ge=0, allow_inf_nan=False)
-    total_cost_bdt: float = Field(ge=0, allow_inf_nan=False)
-    peak_grid_kwh: float = Field(ge=0, allow_inf_nan=False)
-    plan_summary: str
-
-
-class HealthResponse(StrictModel):
-    status: str = "ok"
-
-
-class ErrorDetail(StrictModel):
-    code: str
-    message: str
-
-
-class ErrorResponse(StrictModel):
-    error: ErrorDetail
+class OptimizeEnergyResponse(BaseModel):
+    scenario_id: str = Field(..., description="Must match request scenario_id")
+    directive_interpretation: List[DirectiveInterpretation] = Field(
+        ..., description="Directive interpretation per operator note in note_index order"
+    )
+    hourly_plan: List[HourlyPlanEntry] = Field(..., description="Exactly 24 hourly plan entries")
+    total_grid_kwh: float = Field(..., ge=0.0, description="Sum of grid_kwh across 24 hours")
+    total_cost_bdt: float = Field(..., ge=0.0, description="Total grid electricity cost in BDT")
+    peak_grid_kwh: float = Field(..., ge=0.0, description="Maximum hourly grid_kwh")
+    plan_summary: str = Field(..., description="Human-readable explanation of optimization strategy")
