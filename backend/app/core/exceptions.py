@@ -1,19 +1,31 @@
-class AppError(Exception):
-    """Base exception for application errors."""
-    pass
+from dataclasses import dataclass
 
-class InvalidScheduleError(AppError):
-    """Raised when a schedule is invalid."""
-    pass
+
+@dataclass(slots=True)
+class AppError(Exception):
+    status_code: int
+    code: str
+    message: str
+
+    def __str__(self) -> str:
+        return self.message
+
 
 class LLMUnavailableError(AppError):
-    """Raised when the LLM interpreter is unavailable or unconfigured."""
-    pass
+    def __init__(self, message: str = "LLM service is unavailable") -> None:
+        super().__init__(503, "llm_unavailable", message)
 
-class OptimizationUnavailableError(AppError):
-    """Raised when the energy optimizer is unavailable or unconfigured."""
-    pass
 
 class LLMOutputError(AppError):
-    """Raised when the LLM outputs an invalid format."""
-    pass
+    def __init__(self, message: str = "LLM returned an invalid interpretation") -> None:
+        super().__init__(502, "invalid_llm_output", message)
+
+
+class OptimizationUnavailableError(AppError):
+    def __init__(self, message: str = "Optimization service is unavailable") -> None:
+        super().__init__(503, "optimizer_unavailable", message)
+
+
+class InvalidScheduleError(AppError):
+    def __init__(self, message: str = "Generated schedule failed validation") -> None:
+        super().__init__(500, "invalid_generated_schedule", message)
