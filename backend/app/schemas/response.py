@@ -19,6 +19,10 @@ class HourlyPlanItem(StrictModel):
     battery_energy_after_kwh: float = Field(ge=0, allow_inf_nan=False)
 
 
+# Optimizer PR compatibility while the public API keeps HourlyPlanItem.
+HourlyPlanEntry = HourlyPlanItem
+
+
 class OptimizerResult(StrictModel):
     hourly_plan: list[HourlyPlanItem] = Field(min_length=24, max_length=24)
     plan_summary: str = Field(min_length=1, max_length=2000)
