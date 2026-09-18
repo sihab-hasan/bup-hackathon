@@ -83,16 +83,24 @@ http://127.0.0.1:8000/redoc
 
 ## Environment Variables
 
-Create a `.env` file in `backend/` and configure the required Supabase credentials.
+Copy `.env.example` to `.env` in the repository root and configure the required
+credentials. The backend also accepts `backend/.env`, which overrides root values.
 
 Example:
 
 ```env
 SUPABASE_URL=your-supabase-project-url
 SUPABASE_KEY=your-supabase-key
+GEMINI_API_KEY=your-new-gemini-api-key
+LLM_PROVIDER=gemini
+LLM_MODEL=gemini-3.8-flash
 ```
 
 Never commit `.env` or other files containing secrets.
+
+The Gemini integration converts each operator note into a structured GridWise
+directive. If `GEMINI_API_KEY` is absent, `/optimize-energy` returns a safe 503
+instead of starting an unconfigured LLM request.
 
 ## Development
 
