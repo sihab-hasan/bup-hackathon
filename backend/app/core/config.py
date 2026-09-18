@@ -43,7 +43,7 @@ def get_settings() -> Settings:
         app_env=getenv("APP_ENV", "development"),
         llm_timeout_seconds=_positive_float("LLM_TIMEOUT_SECONDS", 8),
         llm_provider=getenv("LLM_PROVIDER", "gemini").strip().lower(),
-        llm_model=getenv("LLM_MODEL", "gemini-3.8-flash").strip(),
+        llm_model=getenv("LLM_MODEL", "gemini-2.5-flash").strip(),
         gemini_api_key=(getenv("GEMINI_API_KEY") or "").strip() or None,
         optimizer_timeout_seconds=_positive_float("OPTIMIZER_TIMEOUT_SECONDS", 20),
         cors_origins=origins,

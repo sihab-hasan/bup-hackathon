@@ -93,7 +93,7 @@ SUPABASE_URL=your-supabase-project-url
 SUPABASE_KEY=your-supabase-key
 GEMINI_API_KEY=your-new-gemini-api-key
 LLM_PROVIDER=gemini
-LLM_MODEL=gemini-3.8-flash
+LLM_MODEL=gemini-2.5-flash
 ```
 
 Never commit `.env` or other files containing secrets.
