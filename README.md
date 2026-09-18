@@ -26,7 +26,7 @@ or Supabase integration in this repository.
 ## Requirements
 
 - Python 3.13 or newer
-- A Gemini API key for live `/optimize-energy` requests
+- An API key for the configured LLM provider during live `/optimize-energy` requests
 
 ## Local setup
 
@@ -63,7 +63,7 @@ APP_NAME=GridWise API
 APP_ENV=development
 LLM_PROVIDER=gemini
 LLM_MODEL=gemini-2.5-flash
-GEMINI_API_KEY=your-gemini-api-key
+API_KEY=your-provider-api-key
 LLM_TIMEOUT_SECONDS=20
 OPTIMIZER_TIMEOUT_SECONDS=20
 CORS_ORIGINS=http://localhost:3000,http://localhost:5173

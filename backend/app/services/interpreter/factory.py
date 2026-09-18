@@ -9,12 +9,12 @@ def create_note_interpreter(settings: Settings) -> NoteInterpreter:
         return UnconfiguredNoteInterpreter(
             f"Unsupported LLM provider: {settings.llm_provider}"
         )
-    if not settings.gemini_api_key:
-        return UnconfiguredNoteInterpreter("GEMINI_API_KEY is not configured")
+    if not settings.api_key:
+        return UnconfiguredNoteInterpreter("API_KEY is not configured")
     if not settings.llm_model:
         return UnconfiguredNoteInterpreter("LLM_MODEL is not configured")
 
     return GeminiNoteInterpreter(
-        api_key=settings.gemini_api_key,
+        api_key=settings.api_key,
         model=settings.llm_model,
     )

@@ -26,7 +26,7 @@ class Settings:
     llm_timeout_seconds: float
     llm_provider: str
     llm_model: str
-    gemini_api_key: str | None
+    api_key: str | None
     optimizer_timeout_seconds: float
     cors_origins: tuple[str, ...]
 
@@ -44,9 +44,9 @@ def get_settings() -> Settings:
         app_name=getenv("APP_NAME", "GridWise API"),
         app_env=getenv("APP_ENV", "development"),
         llm_timeout_seconds=_positive_float("LLM_TIMEOUT_SECONDS", 20),
-        llm_provider=getenv("LLM_PROVIDER", "gemini").strip().lower(),
-        llm_model=getenv("LLM_MODEL", "gemini-2.5-flash").strip(),
-        gemini_api_key=(getenv("GEMINI_API_KEY") or "").strip() or None,
+        llm_provider=(getenv("LLM_PROVIDER") or "gemini").strip().lower(),
+        llm_model=(getenv("LLM_MODEL") or "gemini-2.5-flash").strip(),
+        api_key=(getenv("API_KEY") or getenv("GEMINI_API_KEY") or "").strip() or None,
         optimizer_timeout_seconds=_positive_float("OPTIMIZER_TIMEOUT_SECONDS", 20),
         cors_origins=origins,
     )

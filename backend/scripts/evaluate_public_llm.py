@@ -29,8 +29,8 @@ def comparable(item: dict[str, object]) -> dict[str, object]:
 
 async def main() -> int:
     settings = get_settings()
-    if not settings.gemini_api_key:
-        print("ERROR: GEMINI_API_KEY is not configured")
+    if not settings.api_key:
+        print("ERROR: API_KEY is not configured")
         return 2
 
     interpreter = create_note_interpreter(settings)
