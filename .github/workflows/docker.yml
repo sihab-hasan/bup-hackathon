@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - feature/end-to-end-deployment
+      - work
   pull_request:
     branches:
       - main
@@ -27,7 +27,7 @@ jobs:
       - name: Build image for verification
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
+          context: .
           file: ./backend/Dockerfile
           load: true
           push: false
@@ -36,8 +36,9 @@ jobs:
       - name: Verify container health
         shell: bash
         run: |
+          set -euo pipefail
           docker run --detach --name gridwise-api --publish 8000:8000 \
-            --env GEMINI_API_KEY=test-only-placeholder gridwise-api:test
+            --env API_KEY=test-only-placeholder gridwise-api:test
           trap 'docker logs gridwise-api' EXIT
 
           for attempt in {1..20}; do
