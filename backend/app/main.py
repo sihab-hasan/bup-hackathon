@@ -1,6 +1,9 @@
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import router as api_router
 from app.core.config import get_settings
@@ -9,6 +12,8 @@ from app.schemas import ErrorDetail, ErrorResponse
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name)
+WEB_ROOT = Path(__file__).resolve().parent / "web"
+app.mount("/assets", StaticFiles(directory=WEB_ROOT), name="assets")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),
@@ -26,5 +31,5 @@ async def handle_app_error(_: Request, exc: AppError) -> JSONResponse:
 app.include_router(api_router)
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to the Energy Optimizer API"}
+def read_root() -> FileResponse:
+    return FileResponse(WEB_ROOT / "index.html", media_type="text/html")
