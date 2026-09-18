@@ -1,7 +1,7 @@
 # GridWise
 
-GridWise is a FastAPI service that turns operator notes and hourly energy data
-into an optimized 24-hour electricity schedule. The pipeline interprets natural
+GridWise is a FastAPI service and browser demo that turns operator notes and
+hourly energy data into an optimized 24-hour electricity schedule. The pipeline interprets natural
 language directives with Gemini, validates them with safety guardrails, and
 optimizes grid, solar, and battery usage.
 
@@ -12,7 +12,6 @@ optimizes grid, solar, and battery usage.
 ├── backend/
 │   ├── app/                         # FastAPI application and optimization pipeline
 │   ├── tests/                       # Unit, integration, and evaluation tests
-│   ├── docs/                        # Backend architecture and conformance notes
 │   └── requirements.txt             # Runtime, development, and test dependencies
 ├── BUP_CSE_FEST_2026_Participant_Docs/
 │   └── BUP_CSE_FEST_2026_Preli_Public_Sample_Cases.json
@@ -85,6 +84,7 @@ The service runs at `http://127.0.0.1:8000`.
 
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - ReDoc: `http://127.0.0.1:8000/redoc`
+- Demo website: `http://127.0.0.1:8000/`
 - Health check: `GET /health`
 - Optimization: `POST /optimize-energy`
 
@@ -188,6 +188,16 @@ python -m pytest
 
 The public sample cases are stored in
 `BUP_CSE_FEST_2026_Participant_Docs/` and are covered by the evaluation tests.
+To run the complete public-case test suite locally:
+
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m pytest tests\evaluation tests\integration\test_public_pipeline.py
+```
+
+The sample pack is the public reference for semantic directive interpretation;
+returned schedules may differ from the reference schedule when they remain
+valid and optimal under the same constraints.
 
 ## Development notes
 

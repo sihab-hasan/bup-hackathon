@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GridWise | Energy Control Room</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="GridWise home">
+        <span class="brand-mark">G</span>
+        <span><strong>GridWise</strong><small>energy control room</small></span>
+      </a>
+      <div class="status-pill"><span></span> API online</div>
+    </header>
+
+    <section class="hero">
+      <div>
+        <p class="eyebrow">24-hour optimization</p>
+        <h1>Make every kilowatt<br><em>work harder.</em></h1>
+        <p class="hero-copy">Turn operator notes into a safe, cost-aware energy schedule.</p>
+      </div>
+      <div class="hero-orbit" aria-hidden="true"><div class="orbit-ring"></div><div class="orbit-core">24<span>H</span></div></div>
+    </section>
+
+    <section class="workspace">
+      <form id="optimizer-form" class="panel control-panel">
+        <div class="panel-heading"><div><p class="eyebrow">Scenario input</p><h2>Set the day</h2></div><span class="step">01</span></div>
+        <label>Scenario ID<input id="scenario-id" value="demo-day" required></label>
+        <label>Operator note<textarea id="operator-note" rows="3">Keep enough battery reserve for the evening.</textarea></label>
+        <div class="field-grid">
+          <label>Battery capacity<input id="capacity" type="number" value="100" min="1" step="1"></label>
+          <label>Initial energy<input id="initial" type="number" value="50" min="0" step="1"></label>
+          <label>Minimum reserve<input id="minimum" type="number" value="20" min="0" step="1"></label>
+          <label>Charge rate / h<input id="charge" type="number" value="10" min="0" step="1"></label>
+        </div>
+        <button type="submit" class="primary-button"><span>Run optimization</span><b>↗</b></button>
+        <p id="form-message" class="form-message" role="status"></p>
+      </form>
+
+      <section class="panel result-panel">
+        <div class="panel-heading"><div><p class="eyebrow">Live result</p><h2 id="result-title">Awaiting a scenario</h2></div><span class="step">02</span></div>
+        <div class="metric-grid">
+          <article><span>Total grid</span><strong id="total-grid">--</strong><small>kWh</small></article>
+          <article><span>Total cost</span><strong id="total-cost">--</strong><small>BDT</small></article>
+          <article><span>Peak import</span><strong id="peak-grid">--</strong><small>kWh</small></article>
+        </div>
+        <div class="directive-box"><span class="mini-label">Interpretation</span><p id="directive-text">Your operator note will be translated into a machine-checkable directive.</p></div>
+        <div class="schedule-head"><h3>Hourly schedule</h3><span id="schedule-count">0 / 24 hours</span></div>
+        <div class="table-wrap"><table><thead><tr><th>Hour</th><th>Grid</th><th>Solar</th><th>Battery</th><th>Action</th></tr></thead><tbody id="schedule-body"><tr><td colspan="5" class="empty-state">Run a scenario to see the schedule.</td></tr></tbody></table></div>
+      </section>
+    </section>
+    <footer><span>GridWise API</span><a href="/docs">Open API docs ↗</a><span>Built for BUP CSE Fest 2026</span></footer>
+  </main>
+  <script src="/assets/app.js"></script>
+</body>
+</html>
