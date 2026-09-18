@@ -1,134 +1,140 @@
-# Hackathon
+# GridWise
 
-Next.js frontend + FastAPI backend with Supabase as the primary data and integration layer.
+GridWise is a FastAPI service that turns operator notes and hourly energy data
+into an optimized 24-hour electricity schedule. The pipeline interprets natural
+language directives with Gemini, validates them with safety guardrails, and
+optimizes grid, solar, and battery usage.
 
-## Structure
+## Repository layout
 
 ```text
 .
-├── frontend/    # Next.js application
-├── backend/     # FastAPI application
-└── docs/        # Architecture and API documentation
+├── backend/
+│   ├── app/                         # FastAPI application and optimization pipeline
+│   ├── tests/                       # Unit, integration, and evaluation tests
+│   ├── docs/                        # Backend architecture and conformance notes
+│   └── requirements.txt             # Runtime, development, and test dependencies
+├── BUP_CSE_FEST_2026_Participant_Docs/
+│   └── BUP_CSE_FEST_2026_Preli_Public_Sample_Cases.json
+├── .env.example
+└── docker-compose.yml
 ```
 
-The `backend/app/integrations/` abstraction is intentionally omitted because Supabase handles the persistence and integration concerns.
+The current implementation is backend-only. There is no `frontend/` directory
+or Supabase integration in this repository.
 
-## Prerequisites
+## Requirements
 
-* Node.js
-* pnpm
-* Python 3.13+
-* A Supabase project
+- Python 3.13 or newer
+- A Gemini API key for live `/optimize-energy` requests
 
-## Run
+## Local setup
 
-### Frontend
+From the repository root, create and activate a virtual environment inside
+`backend/`.
 
-```bash
-cd frontend
-pnpm install
-pnpm dev
-```
-
-### Backend
-
-Create and activate a Python virtual environment:
-
-**Windows PowerShell:**
+Windows PowerShell:
 
 ```powershell
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-**macOS / Linux:**
+macOS or Linux:
 
 ```bash
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
-```
-
-Install the backend dependencies:
-
-```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Start the FastAPI development server:
+## Configuration
+
+Copy `.env.example` to `.env` in the repository root. The backend also loads
+`backend/.env`; values there override values from the root file.
+
+```env
+APP_NAME=GridWise API
+APP_ENV=development
+LLM_PROVIDER=gemini
+LLM_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=your-gemini-api-key
+LLM_TIMEOUT_SECONDS=20
+OPTIMIZER_TIMEOUT_SECONDS=20
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
+```
+
+`GEMINI_API_KEY` is required for live optimization. The health endpoint does
+not require an API key. Never commit `.env` or other files containing secrets.
+
+## Run the API
+
+From the `backend/` directory with the virtual environment activated:
 
 ```bash
 python -m uvicorn app.main:app --reload
 ```
 
-The API will be available at:
+The service runs at `http://127.0.0.1:8000`.
 
-```text
-http://127.0.0.1:8000
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
+- Health check: `GET /health`
+- Optimization: `POST /optimize-energy`
+
+## API example
+
+`POST /optimize-energy` accepts one scenario with exactly 24 hourly records,
+one to three operator notes, and a battery configuration.
+
+```json
+{
+	"scenario_id": "sample-1",
+	"operator_notes": ["Keep enough battery reserve for the evening."],
+	"hours": [
+		{
+			"hour": 0,
+			"demand_kwh": 20,
+			"solar_kwh": 0,
+			"tariff_bdt_per_kwh": 5
+		}
+	],
+	"battery": {
+		"capacity_kwh": 100,
+		"initial_energy_kwh": 50,
+		"minimum_energy_kwh": 20,
+		"max_charge_kwh_per_hour": 10,
+		"max_discharge_kwh_per_hour": 10
+	}
+}
 ```
 
-Interactive API documentation:
+The example above shows the shape of one hour; a valid request must include
+every hour from `0` through `23` exactly once. Responses include interpreted
+directives, an hourly plan, total grid energy, total cost, peak grid usage, and
+a plan summary.
 
-```text
-http://127.0.0.1:8000/docs
-```
+## Tests
 
-Alternative API documentation:
-
-```text
-http://127.0.0.1:8000/redoc
-```
-
-## Environment Variables
-
-Copy `.env.example` to `.env` in the repository root and configure the required
-credentials. The backend also accepts `backend/.env`, which overrides root values.
-
-Example:
-
-```env
-SUPABASE_URL=your-supabase-project-url
-SUPABASE_KEY=your-supabase-key
-GEMINI_API_KEY=your-gemini-api-key
-LLM_PROVIDER=gemini
-LLM_MODEL=gemini-2.5-flash
-```
-
-Never commit `.env` or other files containing secrets.
-
-Gemini converts each operator note into a structured GridWise directive. If the
-API key is absent, `/optimize-energy` returns a safe 503 response.
-
-## Development
-
-When working on the backend, activate the virtual environment before running commands:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-To deactivate it:
-
-```powershell
-deactivate
-```
-
-The `.venv/` directory should not be committed to Git.
-
-## Backend Dependencies
-
-Backend dependencies are managed through:
-
-```text
-backend/requirements.txt
-```
-
-Install them with:
+Run the full backend test suite from `backend/`:
 
 ```bash
-python -m pip install -r requirements.txt
+python -m pytest
 ```
 
-Do not install project dependencies globally when working on the project.
+The public sample cases are stored in
+`BUP_CSE_FEST_2026_Participant_Docs/` and are covered by the evaluation tests.
+
+## Development notes
+
+- All backend, development, and test dependencies are declared in
+	`backend/requirements.txt`.
+- The backend uses FastAPI, Pydantic, SciPy, and the Google GenAI client.
+- Keep `.venv/` and environment files out of version control.
+- `docker-compose.yml` is present, but the backend Dockerfile is not currently
+	implemented. Use the local Python setup above until container support is added.
