@@ -53,3 +53,5 @@ coverage/
 .pytest_cache/
 frontend/
 .agents/
+IMPLEMENTATION_CHECKLIST.md
+MASTER_CHECKLIST.md
