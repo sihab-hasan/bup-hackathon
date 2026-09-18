@@ -68,7 +68,12 @@ class GeminiNoteInterpreter:
         client: AsyncContentGenerator | None = None,
     ) -> None:
         self.model = model
-        self._client = client or genai.Client(api_key=api_key).aio.models
+        self._owner = None
+        if client is not None:
+            self._client = client
+        else:
+            self._owner = genai.Client(api_key=api_key)
+            self._client = self._owner.aio.models
 
     async def interpret_notes(
         self,
