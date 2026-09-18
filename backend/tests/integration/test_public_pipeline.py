@@ -48,30 +48,31 @@ def test_production_dependencies_use_real_optimizer_and_validator():
 def test_all_public_cases_pass_the_full_api_optimization_pipeline():
     cases = json.loads(SAMPLE_PACK.read_text(encoding="utf-8"))["cases"]
 
-    with TestClient(app) as client:
-        for case in cases:
-            expected_directives = case["expected_output"]["directive_interpretation"]
-            service = EnergyService(
-                interpreter=ExpectedInterpreter(expected_directives),
-                optimizer=GridWiseEnergyOptimizer(),
-                schedule_validator=GridWiseScheduleValidator(),
-                settings=get_settings(),
-            )
-            app.dependency_overrides[get_energy_service] = lambda: service
+    try:
+        with TestClient(app) as client:
+            for case in cases:
+                expected_directives = case["expected_output"]["directive_interpretation"]
+                service = EnergyService(
+                    interpreter=ExpectedInterpreter(expected_directives),
+                    optimizer=GridWiseEnergyOptimizer(),
+                    schedule_validator=GridWiseScheduleValidator(),
+                    settings=get_settings(),
+                )
+                app.dependency_overrides[get_energy_service] = lambda: service
 
-            started = time.perf_counter()
-            response = client.post("/optimize-energy", json=case["input"])
-            elapsed = time.perf_counter() - started
+                started = time.perf_counter()
+                response = client.post("/optimize-energy", json=case["input"])
+                elapsed = time.perf_counter() - started
 
-            assert response.status_code == 200, (case["id"], response.text)
-            assert elapsed < 30, case["id"]
-            body = response.json()
-            assert body["scenario_id"] == case["input"]["scenario_id"]
-            assert len(body["directive_interpretation"]) == len(
-                case["input"]["operator_notes"]
-            )
-            assert len(body["hourly_plan"]) == 24
-            audit = validate_schedule(case["input"], expected_directives, body)
-            assert audit.is_valid, (case["id"], audit.errors)
-
-    app.dependency_overrides.clear()
+                assert response.status_code == 200, (case["id"], response.text)
+                assert elapsed < 30, case["id"]
+                body = response.json()
+                assert body["scenario_id"] == case["input"]["scenario_id"]
+                assert len(body["directive_interpretation"]) == len(
+                    case["input"]["operator_notes"]
+                )
+                assert len(body["hourly_plan"]) == 24
+                audit = validate_schedule(case["input"], expected_directives, body)
+                assert audit.is_valid, (case["id"], audit.errors)
+    finally:
+        app.dependency_overrides.clear()

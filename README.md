@@ -69,8 +69,9 @@ OPTIMIZER_TIMEOUT_SECONDS=20
 CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
 
-`GEMINI_API_KEY` is required for live optimization. The health endpoint does
-not require an API key. Never commit `.env` or other files containing secrets.
+`API_KEY` is required for live optimization when the selected provider needs
+authentication. The health endpoint does not require an API key. Never commit
+`.env` or other files containing secrets.
 
 ## Run the API
 
@@ -119,6 +120,64 @@ every hour from `0` through `23` exactly once. Responses include interpreted
 directives, an hourly plan, total grid energy, total cost, peak grid usage, and
 a plan summary.
 
+The response contract is:
+
+```json
+{
+	"scenario_id": "sample-1",
+	"directive_interpretation": [],
+	"hourly_plan": [
+		{
+			"hour": 0,
+			"grid_kwh": 20,
+			"solar_used_kwh": 0,
+			"battery_action": "idle",
+			"battery_kwh": 0,
+			"battery_energy_after_kwh": 50
+		}
+	],
+	"total_grid_kwh": 480,
+	"total_cost_bdt": 2400,
+	"peak_grid_kwh": 20,
+	"plan_summary": "..."
+}
+```
+
+The real response contains 24 hourly plan entries and one directive
+interpretation for each operator note. Invalid requests return a structured
+`{"error": {"code": "...", "message": "..."}}` response.
+
+## Docker
+
+From the repository root:
+
+```powershell
+docker build -f backend/Dockerfile -t gridwise-api .
+docker run --rm -p 8000:8000 --env-file .env gridwise-api
+```
+
+Then verify `http://127.0.0.1:8000/health`. Docker Compose uses the same
+repository-root build context:
+
+```powershell
+docker compose up --build
+```
+
+For a fallback registry image, tag the tested image with the registry name and
+push it after authentication:
+
+```powershell
+docker tag gridwise-api <registry>/<namespace>/gridwise-api:<version>
+docker push <registry>/<namespace>/gridwise-api:<version>
+```
+
+## Render deployment
+
+`render.yaml` configures a Docker web service with `backend/Dockerfile`, root
+build context, `/health` health checks, and an `API_KEY` secret. Set the secret
+in the Render Dashboard, sync the Blueprint, and use **Clear build cache &
+deploy** after deployment configuration changes.
+
 ## Tests
 
 Run the full backend test suite from `backend/`:
@@ -134,7 +193,7 @@ The public sample cases are stored in
 
 - All backend, development, and test dependencies are declared in
 	`backend/requirements.txt`.
-- The backend uses FastAPI, Pydantic, SciPy, and the Google GenAI client.
+- The backend uses FastAPI, Pydantic, SciPy, and the configured LLM adapter.
 - Keep `.venv/` and environment files out of version control.
-- `docker-compose.yml` is present, but the backend Dockerfile is not currently
-	implemented. Use the local Python setup above until container support is added.
+- The Dockerfile and Compose configuration are implemented and use the root
+	repository as the build context.
