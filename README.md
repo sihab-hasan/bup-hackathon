@@ -1,41 +1,39 @@
-# GridWise LLM API
+# GridWise
 
-GridWise converts a natural-language power-grid operator note into a validated
-24-hour energy schedule. The preliminary-round deliverable is a backend API; no
-frontend is required by the problem statement.
+GridWise is a FastAPI service that turns operator notes and hourly energy data
+into an optimized 24-hour electricity schedule. The pipeline interprets natural
+language directives with Gemini, validates them with safety guardrails, and
+optimizes grid, solar, and battery usage.
 
-## Pipeline
+## Repository layout
 
 ```text
-POST /optimize-energy
-        |
-        v
-Gemini interpreter -> input guardrails -> deterministic optimizer -> schedule validator
-        |
-        v
-24 hourly values + machine directives + human-readable explanation
+.
+├── backend/
+│   ├── app/                         # FastAPI application and optimization pipeline
+│   ├── tests/                       # Unit, integration, and evaluation tests
+│   ├── docs/                        # Backend architecture and conformance notes
+│   └── requirements.txt             # Runtime, development, and test dependencies
+├── BUP_CSE_FEST_2026_Participant_Docs/
+│   └── BUP_CSE_FEST_2026_Preli_Public_Sample_Cases.json
+├── .env.example
+└── docker-compose.yml
 ```
 
-Gemini extracts structured intent only. Schedule generation and validation remain
-deterministic so the same interpreted constraints produce a reproducible result.
+The current implementation is backend-only. There is no `frontend/` directory
+or Supabase integration in this repository.
 
-## API
+## Requirements
 
-- `GET /health` - service health check
-- `POST /optimize-energy` - interpret an operator note and return an optimized schedule
-- `GET /docs` - interactive OpenAPI documentation
+- Python 3.13 or newer
+- A Gemini API key for live `/optimize-energy` requests
 
-The request and response contract, limits, error shape, and examples are documented
-in `docs/api-contract.md`.
+## Local setup
 
-## Local Setup
+From the repository root, create and activate a virtual environment inside
+`backend/`.
 
-Requirements:
-
-- Python 3.12 or newer
-- A Gemini API key from Google AI Studio
-
-Create a virtual environment and install dependencies:
+Windows PowerShell:
 
 ```powershell
 cd backend
@@ -45,115 +43,98 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Copy `.env.example` to `.env` in the repository root and set the key:
+macOS or Linux:
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+## Configuration
+
+Copy `.env.example` to `.env` in the repository root. The backend also loads
+`backend/.env`; values there override values from the root file.
 
 ```env
-GEMINI_API_KEY=your-gemini-api-key
+APP_NAME=GridWise API
+APP_ENV=development
 LLM_PROVIDER=gemini
 LLM_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=your-gemini-api-key
 LLM_TIMEOUT_SECONDS=20
 OPTIMIZER_TIMEOUT_SECONDS=20
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
 
-Never commit `.env` or any API key. The backend reads the root `.env`; an optional
-`backend/.env` takes precedence.
+`GEMINI_API_KEY` is required for live optimization. The health endpoint does
+not require an API key. Never commit `.env` or other files containing secrets.
 
-Start the API:
+## Run the API
 
-```powershell
-cd backend
-python start.py
+From the `backend/` directory with the virtual environment activated:
+
+```bash
+python -m uvicorn app.main:app --reload
 ```
 
-The default URL is `http://127.0.0.1:8000`. A host can provide a different port
-through the `PORT` environment variable.
+The service runs at `http://127.0.0.1:8000`.
 
-Check it:
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- ReDoc: `http://127.0.0.1:8000/redoc`
+- Health check: `GET /health`
+- Optimization: `POST /optimize-energy`
 
-```powershell
-curl.exe http://127.0.0.1:8000/health
+## API example
+
+`POST /optimize-energy` accepts one scenario with exactly 24 hourly records,
+one to three operator notes, and a battery configuration.
+
+```json
+{
+	"scenario_id": "sample-1",
+	"operator_notes": ["Keep enough battery reserve for the evening."],
+	"hours": [
+		{
+			"hour": 0,
+			"demand_kwh": 20,
+			"solar_kwh": 0,
+			"tariff_bdt_per_kwh": 5
+		}
+	],
+	"battery": {
+		"capacity_kwh": 100,
+		"initial_energy_kwh": 50,
+		"minimum_energy_kwh": 20,
+		"max_charge_kwh_per_hour": 10,
+		"max_discharge_kwh_per_hour": 10
+	}
+}
 ```
 
-## Verification
+The example above shows the shape of one hour; a valid request must include
+every hour from `0` through `23` exactly once. Responses include interpreted
+directives, an hourly plan, total grid energy, total cost, peak grid usage, and
+a plan summary.
 
-Run the complete automated test suite:
+## Tests
 
-```powershell
-cd backend
-python -m pytest -q
+Run the full backend test suite from `backend/`:
+
+```bash
+python -m pytest
 ```
 
-Run the live Gemini evaluation against all 10 organizer-provided public cases:
+The public sample cases are stored in
+`BUP_CSE_FEST_2026_Participant_Docs/` and are covered by the evaluation tests.
 
-```powershell
-cd backend
-python scripts/evaluate_public_llm.py
-```
+## Development notes
 
-Run a health check and one full public-case request against a deployed API:
-
-```powershell
-cd backend
-python scripts/smoke_public_api.py https://your-service.example.com
-```
-
-The live evaluation consumes Gemini quota. Unit and integration tests use test
-doubles and do not require network access.
-
-## Docker
-
-Build and run from the repository root:
-
-```powershell
-docker build -t gridwise-api backend
-docker run --rm -p 8000:8000 --env-file .env gridwise-api
-```
-
-Or use Compose:
-
-```powershell
-docker compose up --build
-```
-
-The container honors `PORT` and exposes `/health` for platform health checks.
-
-## Deploy To Render
-
-The repository includes `render.yaml` for a Render Blueprint deployment.
-
-1. Push the repository to GitHub.
-2. In Render, create a new Blueprint and select this repository.
-3. Confirm the `gridwise-api` service from `render.yaml`.
-4. Add `GEMINI_API_KEY` as a secret environment variable when prompted.
-5. Deploy, then run `scripts/smoke_public_api.py` against the public URL.
-
-Render builds `backend/Dockerfile`, checks `/health`, and supplies the public HTTPS
-endpoint. The free plan can sleep after inactivity, so the first request may be slower.
-
-## Project Layout
-
-```text
-backend/
-  app/api/                 FastAPI routes and dependency wiring
-  app/services/interpreter Gemini extraction and guardrails
-  app/services/optimizer   deterministic scheduling and validation
-  scripts/                 live evaluation and deployment smoke tests
-  tests/                   unit and end-to-end integration tests
-docs/                      API and architecture documentation
-render.yaml                Render deployment blueprint
-docker-compose.yml         local container runner
-```
-
-## Dependencies And Credits
-
-- FastAPI and Uvicorn for the HTTP service
-- Google Gen AI SDK and Gemini 2.5 Flash for note interpretation
-- Pydantic for request, response, and structured LLM validation
-- pytest and HTTPX for automated verification
-
-## Known Limitations
-
-- Live interpretation depends on Gemini availability, quota, and API-key validity.
-- The rule-based optimizer targets the preliminary problem contract and its public
-  cases; new grid constraints may require additional optimization rules.
-- The API intentionally does not persist operator notes or schedules.
+- All backend, development, and test dependencies are declared in
+	`backend/requirements.txt`.
+- The backend uses FastAPI, Pydantic, SciPy, and the Google GenAI client.
+- Keep `.venv/` and environment files out of version control.
+- `docker-compose.yml` is present, but the backend Dockerfile is not currently
+	implemented. Use the local Python setup above until container support is added.
